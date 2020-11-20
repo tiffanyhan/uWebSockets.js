@@ -191,8 +191,10 @@ export interface HttpRequest {
     getUrl() : string;
     /** Returns the HTTP method, useful for "any" routes. */
     getMethod() : string;
-    /** Returns the part of URL after ? sign or empty string. */
+    /** Returns the raw querystring (the part of URL after ? sign) or empty string. */
     getQuery() : string;
+    /** Returns a decoded query parameter value or empty string. */
+    getQuery(key: string) : string;
     /** Loops over all headers. */
     forEach(cb: (key: string, value: string) => void) : void;
     /** Setting yield to true is to say that this route handler did not handle the route, causing the router to continue looking for a matching route handler, or fail. */
@@ -241,12 +243,19 @@ export interface AppOptions {
     ssl_prefer_low_memory_usage?: boolean;
 }
 
+export enum ListenOptions {
+  LIBUS_LISTEN_DEFAULT = 0,
+  LIBUS_LISTEN_EXCLUSIVE_PORT = 1
+}
+
 /** TemplatedApp is either an SSL or non-SSL app. See App for more info, read user manual. */
 export interface TemplatedApp {
     /** Listens to hostname & port. Callback hands either false or a listen socket. */
     listen(host: RecognizedString, port: number, cb: (listenSocket: us_listen_socket) => void): TemplatedApp;
     /** Listens to port. Callback hands either false or a listen socket. */
     listen(port: number, cb: (listenSocket: any) => void): TemplatedApp;
+    /** Listens to port and sets Listen Options. Callback hands either false or a listen socket. */
+    listen(port: number, options: ListenOptions, cb: (listenSocket: us_listen_socket | false) => void): TemplatedApp;
     /** Registers an HTTP GET handler matching specified URL pattern. */
     get(pattern: RecognizedString, handler: (res: HttpResponse, req: HttpRequest) => void) : TemplatedApp;
     /** Registers an HTTP POST handler matching specified URL pattern. */
@@ -283,6 +292,16 @@ export function SSLApp(options: AppOptions): TemplatedApp;
 
 /** Closes a uSockets listen socket. */
 export function us_listen_socket_close(listenSocket: us_listen_socket): void;
+
+export interface MultipartField {
+    data: ArrayBuffer;
+    name: string;
+    type?: string;
+    filename?: string;
+}
+
+/** Takes a POSTed body and contentType, and returns an array of parts if the request is a multipart request */
+export function getParts(body: RecognizedString, contentType: RecognizedString): MultipartField[] | undefined;
 
 /** WebSocket compression options */
 export type CompressOptions = number;
